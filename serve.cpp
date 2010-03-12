@@ -43,6 +43,12 @@ public:
             uint32_t cont = g_index.Search(query, &results, num, start);
 
             out << "Content-Type: text; charset=utf-8\r\n\r\n";
+
+            if (cont == DiskIndex::kEOF) {
+                out << "N: EOF\r\n";
+            } else {
+                out << "N: " << cont << "\r\n";
+            }
             for (int i = 0; i < results.size(); ++i) {
                 out << results[i] << "\r\n";
             }
