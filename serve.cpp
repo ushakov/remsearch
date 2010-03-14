@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fastcgi++/request.hpp>
 #include <fastcgi++/manager.hpp>
+#include <glib.h>
 
 #include "disk-index.h"
 
@@ -13,23 +14,22 @@ public:
     {
         int id;
         if (environment.requestVarGet("id", id)) {
-            // Concrete id requested
-            int handle = g_index.GetHandle(id);
-            if (handle < 0) {
-                out << "Status: 404\r\n\r\n";
-                return true;
-            }
+            // Document dump requested
             out << "Content-Type: text/html; charset=utf-8\r\n\r\n";
-            g_index.DumpData(handle, out);
+            g_index.DumpData(id, out);
             return true;
         } else {
             std::string query;
             int start;
             int num;
             if (!environment.requestVarGet("q", query)) {
-                out << "Status: 400r\n\r\n";
+                out << "Status: 400\r\n\r\n";
                 return true;
             }
+            // convert to lowercase
+            char *q_lower = g_utf8_strdown(query.c_str(), -1);
+            query.assign(q_lower);
+            free(q_lower);
             
             if (!environment.requestVarGet("s", start)) {
                 start = 0;
@@ -39,18 +39,20 @@ public:
                 num = 10;
             }
 
-            std::vector<uint32_t> results;
-            uint32_t cont = g_index.Search(query, &results, num, start);
+            std::vector<uint32_t> x;
+            std::vector<uint32_t> y;
+            std::vector<std::string> titles;
+            uint32_t cont = g_index.Search(query, &x, &y, &titles, num, start);
 
-            out << "Content-Type: text; charset=utf-8\r\n\r\n";
+            out << "Content-Type: text/plain; charset=utf-8\r\n\r\n";
 
             if (cont == DiskIndex::kEOF) {
                 out << "N: EOF\r\n";
             } else {
                 out << "N: " << cont << "\r\n";
             }
-            for (int i = 0; i < results.size(); ++i) {
-                out << results[i] << "\r\n";
+            for (int i = 0; i < x.size(); ++i) {
+                out << x[i] << " " << y[i] << " " << titles[i] <<"\r\n";
             }
             return true;
         }
