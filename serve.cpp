@@ -10,6 +10,15 @@ DiskIndex g_index;
 class Serve: public Fastcgipp::Request<char>
 {
 public:
+    void out_int_be(int n) {
+        char buf[4];
+        buf[0] = (n >> 24) & 0xff;
+        buf[1] = (n >> 16) & 0xff;
+        buf[2] = (n >> 8) & 0xff;
+        buf[3] = n & 0xff;
+        out.write(buf, 4);
+    }
+
     bool response()
     {
         int id;
@@ -26,11 +35,17 @@ public:
                 out << "Status: 400\r\n\r\n";
                 return true;
             }
+            // For some reason, requestVarGet does not convert + back to space
+            for (int i = 0; i < query.size(); ++i) {
+                if (query[i] == '+') {
+                    query[i] = ' ';
+                }
+            }
             // convert to lowercase
             char *q_lower = g_utf8_strdown(query.c_str(), -1);
             query.assign(q_lower);
             free(q_lower);
-            
+
             if (!environment.requestVarGet("s", start)) {
                 start = 0;
             }
@@ -44,15 +59,27 @@ public:
             std::vector<std::string> titles;
             uint32_t cont = g_index.Search(query, &x, &y, &titles, num, start);
 
-            out << "Content-Type: text/plain; charset=utf-8\r\n\r\n";
+            int text_size = 0;
+            for (int i = 0; i < titles.size(); ++i) {
+                text_size += titles[i].size();
+            }
+
+            int content_length = 4 + 4 + x.size()*12 + text_size;
+            out << "Content-Type: application/octet-stream\r\n";
+            out << "Content-Length: " << content_length << "\r\n";
+            out << "\r\n";
 
             if (cont == DiskIndex::kEOF) {
-                out << "N: EOF\r\n";
+                out_int_be(-1);
             } else {
-                out << "N: " << cont << "\r\n";
+                out_int_be(cont);
             }
+            out_int_be(x.size());
             for (int i = 0; i < x.size(); ++i) {
-                out << x[i] << " " << y[i] << " " << titles[i] <<"\r\n";
+                out_int_be(x[i]);
+                out_int_be(y[i]);
+                out_int_be(titles[i].size());
+                out.write(titles[i].c_str(), titles[i].size());
             }
             return true;
         }
