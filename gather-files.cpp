@@ -24,11 +24,11 @@ void walk(string root, Callable& visitor) {
 
 class GatheringVisitor {
 public:
-    void operator() (string name) {
+    void operator() (const string& name) {
         if (name.find("wmdescr_") != string::npos) {
             descr_names.push_back(name);
         }
-        if (name.find("wmapi_") != string::npos) {
+        if (name.find("wmweb_") != string::npos) {
             data_names.push_back(name);
         }
     }
@@ -54,7 +54,7 @@ int dump_one_file(string filename, ostream& out) {
     return size;
 }
 
-static boost::regex wikimapia_id_re("wmdescr_([0-9]*)\\.html");
+static boost::regex wikimapia_id_re("wmdescr_ru_([0-9]*)\\.html");
 
 void dump_files(const vector<string>& filenames, PlacemarkStorage& ps, string basename) {
     string dataname(basename + ".dat");
@@ -75,8 +75,8 @@ void dump_files(const vector<string>& filenames, PlacemarkStorage& ps, string ba
         if (ps.names.find(id) != ps.names.end()) {
             int length = dump_one_file(filenames[i], data);
 
-            int x = ps.lng[id];
-            int y = ps.lat[id];
+            int x = ps.xcoord[id];
+            int y = ps.ycoord[id];
             string name = ps.names[id];
 
             index.write((char*)&x, sizeof(id));
@@ -106,6 +106,8 @@ int main(int argc, char **argv) {
     GatheringVisitor files;
     walk(argv[1], files);
     PlacemarkStorage ps;
+    cout << "Found " << files.data_names.size() << " data files\n";
+    cout << "Found " << files.descr_names.size() << " descr files\n";
     for (int i = 0; i < files.data_names.size(); ++i) {
         ps.AddFromFile(files.data_names[i]);
     }

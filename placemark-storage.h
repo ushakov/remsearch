@@ -10,8 +10,8 @@ public:
     void AddFromFile(std::string name);
     
     std::map<int, std::string> names;
-    std::map<int, float> lat;
-    std::map<int, float> lng;
+    std::map<int, float> xcoord;
+    std::map<int, float> ycoord;
 };
 
 #endif /* _PLACEMARK_STORAGE_H_ */
