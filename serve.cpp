@@ -151,7 +151,30 @@ public:
 };
 
 int main()
+
+
+static const char* socket_name = "/tmp/remsearch.sock";
+
+int main(int argc, char **argv)
 {
+  struct sockaddr_un sock_addr;
+  int error;
+
+  unlink(socket_name);
+  int fd = socket(PF_UNIX, SOCK_STREAM, 0);
+  memset(&sock_addr, 0, sizeof(struct sockaddr_un));
+  sock_addr.sun_family = AF_UNIX;
+  strcpy(sock_addr.sun_path, socket_name);
+  error = bind(fd, (struct sockaddr*)&sock_addr, sizeof(sock_addr));
+  if (error) {
+    std::ostringstream err;
+    err << "Cannot bind socket: " << strerror(errno);
+    throw std::runtime_error(err.str());
+  }
+  chmod(socket_name, 0666);
+
+  ::listen(fd, 10);
+
     g_index.LoadFromFile("/home/ushakov/maps/mobile/wikimapia-data/search");
     try
     {
