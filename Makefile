@@ -1,7 +1,10 @@
-CXXFLAGS=-O2 -g `pkg-config --cflags glib-2.0`
+FAST_CGI_PATH = /opt/fastcgi
+CXXFLAGS=-O0 -g `pkg-config --cflags glib-2.0` -I$(FAST_CGI_PATH)/include
 LDFLAGS = -lboost_thread-mt -lboost_filesystem-mt -lboost_regex-mt \
 	-lboost_iostreams-mt -lfastcgipp \
-	`pkg-config --libs glib-2.0`
+	`pkg-config --libs glib-2.0` -L$(FAST_CGI_PATH)/lib -Wl,-rpath=$(FAST_CGI_PATH)/lib
+
+all: serve gather-files
 
 serve: serve.o disk-index.o
 
