@@ -31,6 +31,9 @@ public:
         if (name.find("wmweb_") != string::npos) {
             data_names.push_back(name);
         }
+        if (name.find("wmapi_") != string::npos) {
+            data_names.push_back(name);
+        }
     }
     
     vector<string> descr_names;
@@ -54,7 +57,8 @@ int dump_one_file(string filename, ostream& out) {
     return size;
 }
 
-static boost::regex wikimapia_id_re("wmdescr_ru_([0-9]*)\\.html");
+static boost::regex wikimapia_id_old_re("wmdescr_([0-9]*)\\.html");
+static boost::regex wikimapia_id_new_re("wmdescr_ru_([0-9]*)\\.html");
 
 void dump_files(const vector<string>& filenames, PlacemarkStorage& ps, string basename) {
     string dataname(basename + ".dat");
@@ -68,7 +72,8 @@ void dump_files(const vector<string>& filenames, PlacemarkStorage& ps, string ba
     int dumped = 0;
     boost::match_results<std::string::const_iterator> match;
     for (int i = 0; i < filenames.size(); ++i) {
-        if (!boost::regex_search(filenames[i], match, wikimapia_id_re)) {
+        if (!boost::regex_search(filenames[i], match, wikimapia_id_new_re) &&
+            !boost::regex_search(filenames[i], match, wikimapia_id_old_re)) {
             continue;
         }
         uint32_t id = boost::lexical_cast<int>(string(match[1].first, match[1].second));
