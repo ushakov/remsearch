@@ -37,33 +37,14 @@ namespace {
     }
 
     void ReadCharsToUtf8String(istream& in, int num, string* str) {
-        static iconv_t conv = NULL;
-        if (!conv) {
-            conv = iconv_open("utf8", "utf16be");
-        }
-        const int BUFLEN = 512;
+        const int BUFLEN = 8192;
         char inbuf[BUFLEN];
-        char outbuf[BUFLEN*2];
         int converted = 0;
         while (converted < num) {
-            int len = min((num - converted)*2, BUFLEN);
+            int len = min(num - converted, BUFLEN);
             in.read(inbuf, len);
-            char *inptr = inbuf;
-            char *outptr = outbuf;
-            size_t inbytesleft = len;
-            size_t outbytesleft = BUFLEN*2;
-            size_t cnv = iconv(conv, &inptr, &inbytesleft, &outptr, &outbytesleft);
-            if (cnv == (size_t)-1) {
-                cerr << "Error: " << errno << endl;
-                cerr << "converted " << converted + (inptr - inbuf)/2 << " out of " << num << endl;
-                exit(1);
-            }
-            if (inbytesleft != 0) {
-                cerr << "Incomplete conversion" << endl;
-                exit(2);
-            }
-            str->append(outbuf, outptr);
-            converted += len/2;
+            str->append(inbuf, inbuf + len);
+            converted += len;
         }
     }
     
@@ -77,9 +58,9 @@ namespace {
 void PlacemarkStorage::AddFromFile(string name) {
     ifstream ifs(name.c_str());
     while (!ifs.eof()) {
-        // First should be 1 (version number)
+        // First should be 2 (version number)
         int version = ReadInt(ifs);
-        if (version != 1) {
+        if (version != 2) {
             if (ifs.eof()) {
                 continue;
             }
@@ -123,8 +104,8 @@ void PlacemarkStorage::AddFromFile(string name) {
             int x = lowx[i] + (highx[i] - lowx[i])/2;
             int y = lowy[i] + (highy[i] - lowy[i])/2;
             names[ids[i]] = names_in_array[i];
-            lat[ids[i]] = y;
-            lng[ids[i]] = x;
+            xcoord[ids[i]] = y;
+            ycoord[ids[i]] = x;
             //cerr << names_in_array[i] << endl;
         }
     }
