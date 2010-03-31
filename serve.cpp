@@ -150,9 +150,6 @@ public:
     }
 };
 
-int main()
-
-
 static const char* socket_name = "/tmp/remsearch.sock";
 
 int main(int argc, char **argv)
