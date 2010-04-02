@@ -1,5 +1,7 @@
 #include <iostream>
 #include <fstream>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <fastcgi++/request.hpp>
 #include <fastcgi++/manager.hpp>
 #include <glib.h>
