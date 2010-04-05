@@ -8,6 +8,9 @@
 
 DiskIndex g_index;
 
+static const char* index_filename;
+static const char* html_path;
+
 class Serve: public Fastcgipp::Request<char>
 {
 public:
@@ -135,7 +138,7 @@ public:
                 out << "Status: 400 Bad request\r\n\r\n";
                 return true;
             }
-            name = "/home/ushakov/devel/maps/remote-search/st/" + name;
+            name = std::string(html_path) + "/" + name;
             std::ifstream ifs(name.c_str());
             if (!ifs.is_open()) {
                 out << "Status: 404 Not found\r\n\r\n";
@@ -154,6 +157,13 @@ static const char* socket_name = "/tmp/remsearch.sock";
 
 int main(int argc, char **argv)
 {
+  if (argc < 3) {
+    std::cerr << "Two arguments required: ./serve index_path html_path\n";
+    return 1;
+  }
+  index_filename = argv[1];
+  html_path = argv[2];
+  
   struct sockaddr_un sock_addr;
   int error;
 
@@ -172,10 +182,10 @@ int main(int argc, char **argv)
 
   ::listen(fd, 10);
 
-    g_index.LoadFromFile("/home/ushakov/maps/mobile/wikimapia-data/search");
+  g_index.LoadFromFile(argv[1]);
     try
     {
-        Fastcgipp::Manager<Serve> fcgi;
+        Fastcgipp::Manager<Serve> fcgi(fd);
         fcgi.handler();
     }
     catch(std::exception& e)
