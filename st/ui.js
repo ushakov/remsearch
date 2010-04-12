@@ -18,6 +18,7 @@ function initialize() {
   map.addControl(new GSmallMapControl());
   map.addControl(new GMapTypeControl());
   map.enableScrollWheelZoom();
+  GEvent.addListener(map, "dragend", refresh);
 }
 
 $(document).ready(function() {
@@ -49,7 +50,7 @@ function send_search(q, c) {
 		'minlng': b.getSouthWest().x,
 		'maxlat': b.getNorthEast().y,
 		'maxlng': b.getNorthEast().x,
-		'n': 20};
+		'n': 30};
     var callback = got_results;
     if (c != 0 && cont != -2) {
 	if (cont != -1) {
@@ -103,7 +104,8 @@ function makeMarker(lat, lng, title) {
   myicon.iconSize = new GSize(32, 32);
   myicon.iconAnchor = new GPoint(16, 32);
   myicon.infoWindowAnchor = new GPoint(16, 32);
-  var marker = new GMarker(new GLatLng(lat,lng), {"icon": myicon, "title": title});
+  var point = new GLatLng(lat,lng);
+  var marker = new GMarker(point, {"icon": myicon, "title": title});
   GEvent.addListener(marker, "click", function() {
           marker.openInfoWindowHtml(title);
       });

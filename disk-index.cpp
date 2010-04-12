@@ -37,7 +37,7 @@ void DiskIndex::LoadFromFile(std::string basename) {
 }
 
 uint32_t DiskIndex::Search(
-    const std::string& query,
+	const Query& query,
         std::vector<uint32_t>* x,
         std::vector<uint32_t>* y,
         std::vector<std::string>* t,
@@ -47,10 +47,19 @@ uint32_t DiskIndex::Search(
     uint32_t idx = start;
     int matches_found = 0;
     while (true) {
-        uint32_t next_idx = GetNextMatchIdx(query, idx);
+        uint32_t next_idx = GetNextMatchIdx(query.query, idx);
         if (next_idx == kEOF) {
             return kEOF;
         }
+        idx = next_idx + 1;
+	if (query.has_viewport) {
+	  if (x_coords[next_idx] < query.minx || x_coords[next_idx] > query.maxx) {
+	    continue;
+	  }
+	  if (y_coords[next_idx] < query.miny || y_coords[next_idx] > query.maxy) {
+	    continue;
+	  }
+	}
         x->push_back(x_coords[next_idx]);
         y->push_back(y_coords[next_idx]);
         std::string title(titles.data() + name_offsets[next_idx],
@@ -64,7 +73,6 @@ uint32_t DiskIndex::Search(
                 return kEOF;
             }
         }
-        idx = next_idx + 1;
     }
 }
     

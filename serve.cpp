@@ -17,10 +17,21 @@ double mercy2lng(double m) {
   return 360 * (m - 0.5);
 }
 
+int lng2mercy(double m) {
+  m = (m / 360) + 0.5;
+  return m * (1 << 28);
+}
+
 double mercx2lat(double m) {
   m /= 1.0 * (1 << 28);
   double lat_rad = 2 * (atan(exp(2 * M_PI * (0.5 - m))) - M_PI / 4);
   return lat_rad * 180 / M_PI;
+}
+
+int lat2mercx(double m) {
+  double lat_rad = m * M_PI / 180;
+  double x = 0.5 - log(tan(lat_rad / 2 + M_PI / 4)) / 2 / M_PI;
+  return x * (1 << 28);
 }
 
 class Serve: public Fastcgipp::Request<char>
@@ -117,9 +128,11 @@ public:
                     query[i] = ' ';
                 }
             }
+
+	    Query Q;
             // convert to lowercase
             char *q_lower = g_utf8_strdown(query.c_str(), -1);
-            query.assign(q_lower);
+	    Q.query = q_lower;
             free(q_lower);
 
             if (!environment.requestVarGet("s", start)) {
@@ -130,10 +143,27 @@ public:
                 num = 10;
             }
 
+	    double minlat, minlng, maxlat, maxlng;
+	    if (environment.requestVarGet("minlat", minlat)) {
+	      environment.requestVarGet("minlng", minlng);
+	      environment.requestVarGet("maxlat", maxlat);
+	      environment.requestVarGet("maxlng", maxlng);
+
+	      Q.minx = lat2mercx(maxlat);
+	      Q.maxx = lat2mercx(minlat);
+	      Q.miny = lng2mercy(minlng);
+	      Q.maxy = lng2mercy(maxlng);
+	      std::cerr << "minx,y " << Q.minx << " " << Q.miny << std::endl; 
+	      std::cerr << "maxx,y " << Q.maxx << " " << Q.maxy << std::endl; 
+	      Q.has_viewport = true;
+	    } else {
+	      Q.has_viewport = false;
+	    }
+
             std::vector<uint32_t> x;
             std::vector<uint32_t> y;
             std::vector<std::string> titles;
-            uint32_t cont = g_index.Search(query, &x, &y, &titles, num, start);
+            uint32_t cont = g_index.Search(Q, &x, &y, &titles, num, start);
 
             std::string output;
             if (environment.requestVarGet("output", output) &&

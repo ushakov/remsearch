@@ -14,6 +14,13 @@ namespace boost {
     }
 }
 
+struct Query {
+  std::string query;
+  bool has_viewport;
+  int minx, miny;
+  int maxx, maxy;
+};
+
 class DiskIndex {
 public:
     static const uint32_t kEOF;
@@ -28,7 +35,7 @@ public:
     // searching. Initial searches should use 0 as start. Will return
     // kEOF if end of data was reached (i.e., there will be no more
     // matches).
-    uint32_t Search(const std::string& query,
+    uint32_t Search(const Query& query,
                     std::vector<uint32_t>* x,
                     std::vector<uint32_t>* y,
                     std::vector<std::string>* titles,
