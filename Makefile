@@ -1,8 +1,8 @@
-FAST_CGI_PATH = /opt/fastcgi
-CXXFLAGS=-O0 -g `pkg-config --cflags glib-2.0` -I$(FAST_CGI_PATH)/include
+FAST_CGI_PATH = /usr/local
+CXXFLAGS=-O0 -g `pkg-config --cflags glib-2.0 fastcgi++`
 LDFLAGS = -lboost_thread-mt -lboost_filesystem-mt -lboost_regex-mt \
-	-lboost_iostreams-mt -lfastcgipp \
-	`pkg-config --libs glib-2.0` -L$(FAST_CGI_PATH)/lib -Wl,-rpath=$(FAST_CGI_PATH)/lib
+	-lboost_iostreams-mt \
+	`pkg-config --libs glib-2.0 fastcgi++` 
 
 all: serve gather-files
 
