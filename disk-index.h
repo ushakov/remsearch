@@ -36,6 +36,7 @@ public:
     // kEOF if end of data was reached (i.e., there will be no more
     // matches).
     uint32_t Search(const Query& query,
+                    std::vector<uint32_t>* id,
                     std::vector<uint32_t>* x,
                     std::vector<uint32_t>* y,
                     std::vector<std::string>* titles,
@@ -49,6 +50,7 @@ private:
     
     boost::iostreams::mapped_file_source data;
     boost::iostreams::mapped_file_source titles;
+    std::vector<uint32_t> obj_id;
     std::vector<uint32_t> x_coords;
     std::vector<uint32_t> y_coords;
     std::vector<uint32_t> name_offsets;

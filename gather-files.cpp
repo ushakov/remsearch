@@ -84,6 +84,7 @@ void dump_files(const vector<string>& filenames, PlacemarkStorage& ps, string ba
             int y = ps.ycoord[id];
             string name = ps.names[id];
 
+            index.write((char*)&id, sizeof(id));
             index.write((char*)&x, sizeof(id));
             index.write((char*)&y, sizeof(id));
 
