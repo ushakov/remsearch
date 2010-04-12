@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <cmath>
 #include <fastcgi++/request.hpp>
 #include <fastcgi++/manager.hpp>
 #include <glib.h>
@@ -10,6 +11,17 @@ DiskIndex g_index;
 
 static const char* index_filename;
 static const char* html_path;
+
+double mercy2lng(double m) {
+  m /= 1.0 * (1 << 28);
+  return 360 * (m - 0.5);
+}
+
+double mercx2lat(double m) {
+  m /= 1.0 * (1 << 28);
+  double lat_rad = 2 * (atan(exp(2 * M_PI * (0.5 - m))) - M_PI / 4);
+  return lat_rad * 180 / M_PI;
+}
 
 class Serve: public Fastcgipp::Request<char>
 {
@@ -72,13 +84,17 @@ public:
                      int cont) {
         out << "Content-Type: application/json\r\n";
         out << "\r\n";
-        out << "{'cont':" << cont << ", ";
+	if (cont == DiskIndex::kEOF) {
+	  out << "{'cont': -1,";
+	} else {
+	  out << "{'cont':" << cont << ", ";
+	}
         out << "'q': '" << quote(query) << "',";
         out << "'data': [";
         for (int i = 0; i < x.size(); ++i) {
-            out << "{ 'x': " << x[i] << ", ";
-            out << "'y': " << y[i] << ", ";
-            out << "'title': '" << quote(titles[i]) << "'}, ";
+	  out << "{ 'lat': " << mercx2lat(x[i]) << ", ";
+	  out << "'lng': " << mercy2lng(y[i]) << ", ";
+	  out << "'title': '" << quote(titles[i]) << "'}, ";
         }
         out << "]}";
     }
@@ -144,8 +160,12 @@ public:
                 out << "Status: 404 Not found\r\n\r\n";
                 return true;
             }
-            out << "Content-Type: text/html; charset=utf-8\r\n";
-            out << "\r\n";
+	    if (name.substr(name.size()-4) == ".png") {
+	      out << "Content-Type: image/png;\r\n";
+	    } else {
+	      out << "Content-Type: text/html; charset=utf-8\r\n";
+	    }
+	    out << "\r\n";
             out.dump(ifs);
             return true;
         }
@@ -153,7 +173,7 @@ public:
     }
 };
 
-static const char* socket_name = "/tmp/remsearch.sock";
+static const char* socket_name = "/tmp/fcgi.socket";
 
 int main(int argc, char **argv)
 {
