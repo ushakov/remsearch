@@ -88,7 +88,10 @@ void dump_files(const vector<string>& filenames, PlacemarkStorage& ps, string ba
             index.write((char*)&y, sizeof(id));
 
             index.write((char*)&names_offset, sizeof(names_offset));
-            titles.write(name.c_str(), name.size());
+
+	    char *lower = g_utf8_strdown(name.c_str(), -1);
+	    size_t size = strlen(lower);
+            titles.write(lower, size);
             names_offset += name.size();
 
             index.write((char*)&offset, sizeof(offset));

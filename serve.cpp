@@ -93,6 +93,7 @@ public:
                      const std::vector<uint32_t>& y,
                      const std::vector<std::string>& titles,
                      int cont) {
+        std::cerr << "json: q=" << query << "; len=" << titles.size() << std::endl;
         out << "Content-Type: application/json\r\n";
         out << "\r\n";
 	if (cont == DiskIndex::kEOF) {
@@ -143,6 +144,12 @@ public:
                 num = 10;
             }
 
+	    int dummy;
+	    bool in_titles = false;
+	    if (environment.requestVarGet("ts", dummy)) {
+	      in_titles = true;
+	    }
+
 	    double minlat, minlng, maxlat, maxlng;
 	    if (environment.requestVarGet("minlat", minlat)) {
 	      environment.requestVarGet("minlng", minlng);
@@ -163,7 +170,7 @@ public:
             std::vector<uint32_t> x;
             std::vector<uint32_t> y;
             std::vector<std::string> titles;
-            uint32_t cont = g_index.Search(Q, &x, &y, &titles, num, start);
+	    uint32_t cont = g_index.Search(Q, &x, &y, &titles, num, start, in_titles);
 
             std::string output;
             if (environment.requestVarGet("output", output) &&

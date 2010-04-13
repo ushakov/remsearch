@@ -34,18 +34,21 @@ public:
     // (opaque) integer that can be passed as start arg to continue
     // searching. Initial searches should use 0 as start. Will return
     // kEOF if end of data was reached (i.e., there will be no more
-    // matches).
+    // matches). If in_titles == true, search only in titles, not in
+    // the full text.
     uint32_t Search(const Query& query,
                     std::vector<uint32_t>* x,
                     std::vector<uint32_t>* y,
                     std::vector<std::string>* titles,
-                    int n_results, uint32_t start) const;
+                    int n_results, uint32_t start, bool in_titles) const;
     
 
     void DumpData(int handle, std::ostream& out) const;
 
 private:
-    uint32_t GetNextMatchIdx(const std::string& query, uint32_t start_idx) const;
+  uint32_t GetNextMatchIdx(const std::string& query, uint32_t start_idx,
+			   const boost::iostreams::mapped_file_source& data,
+			   const std::vector<uint32_t>& offsets) const;
     
     boost::iostreams::mapped_file_source data;
     boost::iostreams::mapped_file_source titles;

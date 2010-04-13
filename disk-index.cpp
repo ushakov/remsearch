@@ -41,13 +41,18 @@ uint32_t DiskIndex::Search(
         std::vector<uint32_t>* x,
         std::vector<uint32_t>* y,
         std::vector<std::string>* t,
-        int n_results, uint32_t start) const {
+        int n_results, uint32_t start, bool in_titles) const {
     // We are interpreting start as the index in our arrays of the
     // first non-searched data chunk.
     uint32_t idx = start;
     int matches_found = 0;
     while (true) {
-        uint32_t next_idx = GetNextMatchIdx(query.query, idx);
+        uint32_t next_idx;
+        if (in_titles) {
+	    next_idx = GetNextMatchIdx(query.query, idx, titles, name_offsets);
+        } else {
+	    next_idx = GetNextMatchIdx(query.query, idx, data, data_offsets);
+        }
         if (next_idx == kEOF) {
             return kEOF;
         }
@@ -77,28 +82,26 @@ uint32_t DiskIndex::Search(
 }
     
 uint32_t DiskIndex::GetNextMatchIdx(
-    const std::string& query, uint32_t start_idx) const {
-    if (start_idx >= data_offsets.size()) {
+    const std::string& query, uint32_t start_idx,
+    const boost::iostreams::mapped_file_source& data,
+    const std::vector<uint32_t>& offsets) const {
+    if (start_idx >= offsets.size()) {
         return kEOF;
     }
-    uint32_t start = data_offsets[start_idx];
+    uint32_t start = offsets[start_idx];
     const char *found = search(data.data() + start,
                                data.data() + data.size(),
                                query.begin(), query.end());
-//     boost::iterator_range<const char*> source(data.data() + start, data.data() + data.size());
-//     boost::iterator_range<std::string::const_iterator> pattern(query.begin(), query.end());
-//     boost::iterator_range<const char*> found = boost::ifind_first(
-//         source, pattern, std::locale(""));
     if (found == data.data() + data.size()) {
         return kEOF;
     }
     int offset = found - data.data();
     vector<uint32_t>::const_iterator next_idx =
-        upper_bound(data_offsets.begin(), data_offsets.end(), offset);
-    if (next_idx == data_offsets.end()) {
-        return data_offsets.size() - 1;
+        upper_bound(offsets.begin(), offsets.end(), offset);
+    if (next_idx == offsets.end()) {
+        return offsets.size() - 1;
     }
-    int idx = next_idx - data_offsets.begin();
+    int idx = next_idx - offsets.begin();
     return idx - 1;
 }
 
