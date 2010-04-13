@@ -1,7 +1,7 @@
 var map = null;
 var edit = null;
 var icon_base = 'http://maps.google.com/mapfiles/ms/micons/';
-var cache_server_base = 'http://localhost:8080/CacheServer/cache/'
+var cache_server_base = 'http://localhost:15000/wmcache?path='
 var description_div = null;
 var marker = null;
 var timeout_interval = 10000.0;
@@ -104,7 +104,7 @@ function showDescription(marker, id) {
         id_str = "0" + id_str;
     }
     var descr_url = cache_server_base + 'wmdescr_ru_' + id_str + '.html';
-    response = '<div style="overflow:auto;height:100%"><iframe frameborder=0 width=650 height=400 src="' + descr_url + '"></div>';
+    response = '<div style="overflow:auto;height:95%"><iframe frameborder=0 width=650 height=400 src="' + descr_url + '"></div>';
     marker.openInfoWindowHtml(response);
 }
 
