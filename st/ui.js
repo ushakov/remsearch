@@ -29,6 +29,7 @@ $(document).ready(function() {
 	    });
 	$("#more").click(more);
 	$("#refresh").click(refresh);
+	$("#in-titles").change(refresh);
     });
 
 function query_changed(oldVal) {
@@ -43,6 +44,9 @@ var placemarks = [];
 var cont = -2;
 
 function send_search(q, c) {
+    if (!q) {
+	return;
+    }
     $("#res").html('');
     var b = map.getBounds();
     var data = {'output': 'json',
@@ -58,6 +62,10 @@ function send_search(q, c) {
 	    data['s'] = cont;
 	    callback = got_more_results;
 	}
+    }
+
+    if ($("#in-titles").val()) {
+	data['ts'] = 1;
     }
     $.getJSON("/search", data, callback);
 }
