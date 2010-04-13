@@ -55,7 +55,7 @@ function send_search(q, c) {
 		'minlng': b.getSouthWest().x,
 		'maxlat': b.getNorthEast().y,
 		'maxlng': b.getNorthEast().x,
-		'n': 30};
+		'n': 50};
     var callback = got_results;
     if (c != 0 && cont != -2) {
 	if (cont != -1) {
