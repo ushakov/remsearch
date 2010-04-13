@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <cmath>
 #include <fastcgi++/request.hpp>
 #include <fastcgi++/manager.hpp>
 #include <glib.h>
@@ -12,6 +13,28 @@ DiskIndex g_index;
 
 static const char* index_filename;
 static const char* html_path;
+
+double mercy2lng(double m) {
+  m /= 1.0 * (1 << 28);
+  return 360 * (m - 0.5);
+}
+
+int lng2mercy(double m) {
+  m = (m / 360) + 0.5;
+  return m * (1 << 28);
+}
+
+double mercx2lat(double m) {
+  m /= 1.0 * (1 << 28);
+  double lat_rad = 2 * (atan(exp(2 * M_PI * (0.5 - m))) - M_PI / 4);
+  return lat_rad * 180 / M_PI;
+}
+
+int lat2mercx(double m) {
+  double lat_rad = m * M_PI / 180;
+  double x = 0.5 - log(tan(lat_rad / 2 + M_PI / 4)) / 2 / M_PI;
+  return x * (1 << 28);
+}
 
 class Serve: public Fastcgipp::Request<char>
 {
@@ -25,7 +48,8 @@ public:
         out.write(buf, 4);
     }
 
-    void output_binary(const std::vector<uint32_t>& x,
+    void output_binary(const std::vector<uint32_t>& id,
+                       const std::vector<uint32_t>& x,
                        const std::vector<uint32_t>& y,
                        const std::vector<std::string>& titles,
                        int cont) {
@@ -68,19 +92,25 @@ public:
     }
 
     void output_json(std::string query,
+                     const std::vector<uint32_t>& id,
                      const std::vector<uint32_t>& x,
                      const std::vector<uint32_t>& y,
                      const std::vector<std::string>& titles,
                      int cont) {
         out << "Content-Type: application/json\r\n";
         out << "\r\n";
-        out << "{'cont':" << cont << ", ";
+	if (cont == DiskIndex::kEOF) {
+	  out << "{'cont': -1,";
+	} else {
+	  out << "{'cont':" << cont << ", ";
+	}
         out << "'q': '" << quote(query) << "',";
         out << "'data': [";
         for (int i = 0; i < x.size(); ++i) {
-            out << "{ 'x': " << x[i] << ", ";
-            out << "'y': " << y[i] << ", ";
-            out << "'title': '" << quote(titles[i]) << "'}, ";
+	  out << "{ 'lat': " << mercx2lat(x[i]) << ", ";
+	  out << "'lng': " << mercy2lng(y[i]) << ", ";
+	  out << "'title': '" << quote(titles[i]) << "', ";
+	  out << "'id': " << id[i] << "}, ";
         }
         out << "]}";
     }
@@ -103,9 +133,11 @@ public:
                     query[i] = ' ';
                 }
             }
+
+	    Query Q;
             // convert to lowercase
             char *q_lower = g_utf8_strdown(query.c_str(), -1);
-            query.assign(q_lower);
+	    Q.query = q_lower;
             free(q_lower);
 
             if (!environment.requestVarGet("s", start)) {
@@ -116,17 +148,35 @@ public:
                 num = 10;
             }
 
+	    double minlat, minlng, maxlat, maxlng;
+	    if (environment.requestVarGet("minlat", minlat)) {
+	      environment.requestVarGet("minlng", minlng);
+	      environment.requestVarGet("maxlat", maxlat);
+	      environment.requestVarGet("maxlng", maxlng);
+
+	      Q.minx = lat2mercx(maxlat);
+	      Q.maxx = lat2mercx(minlat);
+	      Q.miny = lng2mercy(minlng);
+	      Q.maxy = lng2mercy(maxlng);
+	      std::cerr << "minx,y " << Q.minx << " " << Q.miny << std::endl; 
+	      std::cerr << "maxx,y " << Q.maxx << " " << Q.maxy << std::endl; 
+	      Q.has_viewport = true;
+	    } else {
+	      Q.has_viewport = false;
+	    }
+
+            std::vector<uint32_t> id;
             std::vector<uint32_t> x;
             std::vector<uint32_t> y;
             std::vector<std::string> titles;
-            uint32_t cont = g_index.Search(query, &x, &y, &titles, num, start);
+            uint32_t cont = g_index.Search(Q, &id, &x, &y, &titles, num, start);
 
             std::string output;
             if (environment.requestVarGet("output", output) &&
                 output == "json") {
-                output_json(query, x, y, titles, cont);
+                output_json(query, id, x, y, titles, cont);
             } else {
-                output_binary(x, y, titles, cont);
+                output_binary(id, x, y, titles, cont);
             }
             
             return true;
@@ -146,8 +196,12 @@ public:
                 out << "Status: 404 Not found\r\n\r\n";
                 return true;
             }
-            out << "Content-Type: text/html; charset=utf-8\r\n";
-            out << "\r\n";
+	    if (name.substr(name.size()-4) == ".png") {
+	      out << "Content-Type: image/png;\r\n";
+	    } else {
+	      out << "Content-Type: text/html; charset=utf-8\r\n";
+	    }
+	    out << "\r\n";
             out.dump(ifs);
             return true;
         }

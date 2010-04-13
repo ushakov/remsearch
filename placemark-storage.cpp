@@ -36,7 +36,7 @@ namespace {
         Skip(in, cntlen*4);
     }
 
-    void ReadCharsToUtf8String(istream& in, int num, string* str) {
+    void ReadUtf8String(istream& in, int num, string* str) {
         const int BUFLEN = 8192;
         char inbuf[BUFLEN];
         int converted = 0;
@@ -48,6 +48,37 @@ namespace {
         }
     }
     
+    void ReadUtf16String(istream& in, int num, string* str) {
+        static iconv_t conv = NULL;
+        if (!conv) {
+            conv = iconv_open("utf8", "utf16be");
+        }
+        const int BUFLEN = 512;
+        char inbuf[BUFLEN];
+        char outbuf[BUFLEN*2];
+        int converted = 0;
+        while (converted < num) {
+            int len = min((num - converted)*2, BUFLEN);
+            in.read(inbuf, len);
+            char *inptr = inbuf;
+            char *outptr = outbuf;
+            size_t inbytesleft = len;
+            size_t outbytesleft = BUFLEN*2;
+            size_t cnv = iconv(conv, &inptr, &inbytesleft, &outptr, &outbytesleft);
+            if (cnv == (size_t)-1) {
+                cerr << "Error: " << errno << endl;
+                cerr << "converted " << converted + (inptr - inbuf)/2 << " out of " << num << endl;
+                exit(1);
+            }
+            if (inbytesleft != 0) {
+                cerr << "Incomplete conversion" << endl;
+                exit(2);
+            }
+            str->append(outbuf, outptr);
+            converted += len/2;
+        }
+    }
+
     void ReadVector(istream& in, int size, vector<int>* v) {
         for (int i = 0; i < size; ++i) {
             v->push_back(ReadInt(in));
@@ -58,9 +89,9 @@ namespace {
 void PlacemarkStorage::AddFromFile(string name) {
     ifstream ifs(name.c_str());
     while (!ifs.eof()) {
-        // First should be 2 (version number)
+        // First should be 1 or 2 (version number)
         int version = ReadInt(ifs);
-        if (version != 2) {
+        if (version != 1 && version != 2) {
             if (ifs.eof()) {
                 continue;
             }
@@ -80,7 +111,11 @@ void PlacemarkStorage::AddFromFile(string name) {
             //cerr << "start=" << start[i] << " next=" << start[i+1] << endl;
             int len = start[i + 1] - start[i];
             //cerr << "i=" << i << " len=" << len << endl;
-            ReadCharsToUtf8String(ifs, len, &names_in_array[i]);
+            if (version == 1) {
+                ReadUtf16String(ifs, len, &names_in_array[i]);
+            } else {
+                ReadUtf8String(ifs, len, &names_in_array[i]);
+            }
         }
         // Geometry
         SkipGeometry(ifs);
