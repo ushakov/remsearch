@@ -104,22 +104,8 @@ function showDescription(marker, id) {
         id_str = "0" + id_str;
     }
     var descr_url = cache_server_base + 'wmdescr_ru_' + id_str + '.html';
-    var invocation = new XMLHttpRequest();
-    invocation.open('GET', descr_url, true);
-    invocation.onreadystatechange = function() {
-        if (invocation.readyState == 4) {
-            var response = null;
-            if (invocation.status == 200) {
-                response = invocation.responseText;
-                // HACK
-                response = response.replace('wmimage_', cache_server_base + 'wmimage_');
-            } else {
-                response = '<br><p style="font-size: 8pt">Sorry, server error occured, likely there is no cached version.</p>';
-            }
-            marker.openInfoWindowHtml(response);
-        }
-    };
-    invocation.send();
+    response = '<div style="overflow:auto;height:100%"><iframe frameborder=0 width=650 height=400 src="' + descr_url + '"></div>';
+    marker.openInfoWindowHtml(response);
 }
 
 function makeMarker(lat, lng, title, id) {
