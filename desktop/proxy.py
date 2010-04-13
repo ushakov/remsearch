@@ -3,6 +3,7 @@
 import httplib
 import pickle
 import re
+import os
 import urllib
 
 import tiles
@@ -85,9 +86,7 @@ class ProxyHandler(object):
     if cached:
       print 'Returning cached copy of ', path
       return cached
-    data = self._FetchUrl(path)
-    # HACK HACK HACK
-    mime_type = 'text/javascript'
+    mime_type, data = self._FetchUrl(path)
     result = (data, mime_type)
     self.cache.Add(path, result)
     return result
@@ -100,6 +99,7 @@ class ProxyHandler(object):
     r = conn.getresponse()
     data = r.read()
     conn.close()
+    mime_type = r.getheader('content-type', 'text/html')
     # handle redirection
     if r.status in [301, 302, 303]:
       new_loc = r.getheader('location')
@@ -110,4 +110,4 @@ class ProxyHandler(object):
       print 'Server response: %s' % data
       os.abort()
       raise DownloadException('Failed HTTP request ' + url + ' reason ' + r.reason)
-    return data
+    return (mime_type, data)
