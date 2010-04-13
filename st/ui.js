@@ -1,6 +1,7 @@
 var map = null;
 var edit = null;
 var icon_base = 'http://maps.google.com/mapfiles/ms/micons/';
+var cache_server_base = 'http://localhost:15000/wmcache?path='
 var description_div = null;
 var marker = null;
 var timeout_interval = 10000.0;
@@ -83,7 +84,7 @@ function got_more_results(json) {
     for (var i = 0; i < json['data'].length; ++i) {
 	var t = json['data'][i];
 	//$("#res").append("<div>lat=" + t['lat'] + "; lng=" + t['lng'] + " " + t['title'] + "</div>");
-	var marker = makeMarker(t['lat'], t['lng'], t['title']);
+	var marker = makeMarker(t['lat'], t['lng'], t['title'], t['id']);
 	placemarks[placemarks.length] = marker; 
 	map.addOverlay(marker);
     }
@@ -105,7 +106,17 @@ function more() {
     send_search(text, 1);
 }
 
-function makeMarker(lat, lng, title) {
+function showDescription(marker, id) {
+    var id_str = "" + id;
+    while (id_str.length < 8) {
+        id_str = "0" + id_str;
+    }
+    var descr_url = cache_server_base + 'wmdescr_ru_' + id_str + '.html';
+    response = '<div style="overflow:auto;height:95%"><iframe frameborder=0 width=650 height=400 src="' + descr_url + '"></div>';
+    marker.openInfoWindowHtml(response);
+}
+
+function makeMarker(lat, lng, title, id) {
   var myicon = new GIcon();
   myicon.image = "/search?name=icon.png";
   myicon.shadow = null;
@@ -115,7 +126,7 @@ function makeMarker(lat, lng, title) {
   var point = new GLatLng(lat,lng);
   var marker = new GMarker(point, {"icon": myicon, "title": title});
   GEvent.addListener(marker, "click", function() {
-          marker.openInfoWindowHtml(title);
+          showDescription(marker, id);
       });
   return marker;
 }

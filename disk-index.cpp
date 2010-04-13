@@ -17,7 +17,8 @@ void DiskIndex::LoadFromFile(std::string basename) {
     string titlename(basename + ".ttl");
     ifstream index(idxname.c_str());
     while (!index.eof()) {
-        uint32_t x, y, name_offset, data_offset;
+        uint32_t id, x, y, name_offset, data_offset;
+        index.read((char*)&id, sizeof(id));
         index.read((char*)&x, sizeof(x));
         if (index.gcount() < sizeof(x)) continue;
         index.read((char*)&y, sizeof(y));
@@ -26,6 +27,7 @@ void DiskIndex::LoadFromFile(std::string basename) {
         if (index.gcount() < sizeof(name_offset)) continue;
         index.read((char*)&data_offset, sizeof(data_offset));
         if (index.gcount() < sizeof(data_offset)) continue;
+        obj_id.push_back(id);
         x_coords.push_back(x);
         y_coords.push_back(y);
         name_offsets.push_back(name_offset);
@@ -38,6 +40,7 @@ void DiskIndex::LoadFromFile(std::string basename) {
 
 uint32_t DiskIndex::Search(
 	const Query& query,
+        std::vector<uint32_t>* id,
         std::vector<uint32_t>* x,
         std::vector<uint32_t>* y,
         std::vector<std::string>* t,
@@ -65,6 +68,7 @@ uint32_t DiskIndex::Search(
 	    continue;
 	  }
 	}
+        id->push_back(obj_id[next_idx]);
         x->push_back(x_coords[next_idx]);
         y->push_back(y_coords[next_idx]);
         std::string title(titles.data() + name_offsets[next_idx],

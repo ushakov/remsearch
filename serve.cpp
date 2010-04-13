@@ -1,5 +1,7 @@
 #include <iostream>
 #include <fstream>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <cmath>
 #include <fastcgi++/request.hpp>
 #include <fastcgi++/manager.hpp>
@@ -46,7 +48,8 @@ public:
         out.write(buf, 4);
     }
 
-    void output_binary(const std::vector<uint32_t>& x,
+    void output_binary(const std::vector<uint32_t>& id,
+                       const std::vector<uint32_t>& x,
                        const std::vector<uint32_t>& y,
                        const std::vector<std::string>& titles,
                        int cont) {
@@ -89,6 +92,7 @@ public:
     }
 
     void output_json(std::string query,
+                     const std::vector<uint32_t>& id,
                      const std::vector<uint32_t>& x,
                      const std::vector<uint32_t>& y,
                      const std::vector<std::string>& titles,
@@ -106,7 +110,8 @@ public:
         for (int i = 0; i < x.size(); ++i) {
 	  out << "{ 'lat': " << mercx2lat(x[i]) << ", ";
 	  out << "'lng': " << mercy2lng(y[i]) << ", ";
-	  out << "'title': '" << quote(titles[i]) << "'}, ";
+	  out << "'title': '" << quote(titles[i]) << "', ";
+	  out << "'id': " << id[i] << "}, ";
         }
         out << "]}";
     }
@@ -167,17 +172,18 @@ public:
 	      Q.has_viewport = false;
 	    }
 
+            std::vector<uint32_t> id;
             std::vector<uint32_t> x;
             std::vector<uint32_t> y;
             std::vector<std::string> titles;
-	    uint32_t cont = g_index.Search(Q, &x, &y, &titles, num, start, in_titles);
+	    uint32_t cont = g_index.Search(Q, &id, &x, &y, &titles, num, start, in_titles);
 
             std::string output;
             if (environment.requestVarGet("output", output) &&
                 output == "json") {
-                output_json(query, x, y, titles, cont);
+                output_json(query, id, x, y, titles, cont);
             } else {
-                output_binary(x, y, titles, cont);
+                output_binary(id, x, y, titles, cont);
             }
             
             return true;
@@ -210,7 +216,7 @@ public:
     }
 };
 
-static const char* socket_name = "/tmp/fcgi.socket";
+static const char* socket_name = "/tmp/remsearch.sock";
 
 int main(int argc, char **argv)
 {
