@@ -93,6 +93,7 @@ void dump_files(const vector<string>& filenames, PlacemarkStorage& ps, string ba
 	    char *lower = g_utf8_strdown(name.c_str(), -1);
 	    size_t size = strlen(lower);
             titles.write(lower, size);
+	    free(lower);
             names_offset += name.size();
 
             index.write((char*)&offset, sizeof(offset));

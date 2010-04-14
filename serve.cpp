@@ -81,9 +81,9 @@ public:
         std::string o;
         for (int i = 0; i < q.size(); ++i) {
             if (q[i] == '\\') {
-                o += "\\";
+                o += "\\\\";
             } else if (q[i] == '\'') {
-                o += "\'";
+                o += "\\'";
             } else {
                 o += q[i];
             }
