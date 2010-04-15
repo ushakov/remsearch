@@ -22,9 +22,10 @@ class RequestDispatcher(BaseHTTPServer.BaseHTTPRequestHandler):
   # for each request.
   #
   # Warning: it is NOT safe to call methods of this object in parallel.
-  def __init__(self):
+  def __init__(self, self_addr):
     self.handlers = {}
     self.proxy_handler = None
+    self.self_addr = self_addr
 
   def RegisterHandler(self, uri, handler):
     assert uri not in self.handlers
@@ -38,6 +39,8 @@ class RequestDispatcher(BaseHTTPServer.BaseHTTPRequestHandler):
 
     Returns None for unknown requests.
     """
+    if path.startswith(self.self_addr):
+      path = path[len(self.self_addr):]
     if not path.startswith('/'):
       if not self.proxy_handler:
         raise Exception('No host-handler defined')
@@ -94,7 +97,7 @@ class RequestDispatcher(BaseHTTPServer.BaseHTTPRequestHandler):
 
 class MoreBaseHttpServer(object):
   def __init__(self, port):
-    self.dispatcher = RequestDispatcher()
+    self.dispatcher = RequestDispatcher('http://localhost:' + str(port))
     self.server = BaseHTTPServer.HTTPServer(('', port),
                                             self.dispatcher.DoHandle)
 

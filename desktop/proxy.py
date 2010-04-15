@@ -3,12 +3,17 @@
 import httplib
 import pickle
 import re
+import os
 import urllib
 
 import tiles
 
+_TILE_URL_REGEXP = 'http://[a-z0-9]*.google.com/vt/(.*)'
+_NO_CACHE_REGEXP = 'http://localhost'
+
 class DownloadException(Exception):
-  def __init__(self, msg):
+  def __init__(self, status, msg):
+    self.status = status
     self.msg = msg
 
 def ParseArgs(uri):
@@ -67,7 +72,7 @@ class ProxyHandler(object):
 
   def _HandleTileRequest(self, path):
     print 'Got tile request', path
-    m = re.match('http://[a-z0-9]*.google.com/vt/(.*)', path)
+    m = re.match(_TILE_URL_REGEXP, path)
     args = ParseArgs(m.group(1))
     if 'x' in args and 'y' in args and 'z' in args:
       x = int(args['x'])
@@ -79,16 +84,18 @@ class ProxyHandler(object):
       return tile, 'image/png'
 
   def _HandleRequest(self, path):
-    if re.match('http://[a-z0-9]*.google.com/vt/lyrs=m@[0-9]+', path):
+    # Handle tile requests in a special way.
+    if re.match(_TILE_URL_REGEXP, path):
       return self._HandleTileRequest(path)
+    # Skip cache for localhost requests - workaround over stupid MacOS proxy bug.
+    if re.match(_NO_CACHE_REGEXP, path):
+      print 'Skipping cache for ', path
+      return self._FetchUrl(path)
     cached = self.cache.GetValue(path)
     if cached:
       print 'Returning cached copy of ', path
       return cached
-    data = self._FetchUrl(path)
-    # HACK HACK HACK
-    mime_type = 'text/javascript'
-    result = (data, mime_type)
+    result = self._FetchUrl(path)
     self.cache.Add(path, result)
     return result
 
@@ -100,6 +107,7 @@ class ProxyHandler(object):
     r = conn.getresponse()
     data = r.read()
     conn.close()
+    mime_type = r.getheader('content-type', 'text/html')
     # handle redirection
     if r.status in [301, 302, 303]:
       new_loc = r.getheader('location')
@@ -108,6 +116,5 @@ class ProxyHandler(object):
     if r.status != 200:
       print 'Got HTTP status %d on %s' % (r.status, url)
       print 'Server response: %s' % data
-      os.abort()
-      raise DownloadException('Failed HTTP request ' + url + ' reason ' + r.reason)
-    return data
+      raise DownloadException(r.status, 'Failed HTTP request ' + url + ' reason ' + r.reason)
+    return data, mime_type

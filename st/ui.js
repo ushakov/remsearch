@@ -61,7 +61,7 @@ function send_search(q, c) {
     var b = map.getBounds();
     var data = {'output': 'json',
 		'q': q,
-		'n': 30};
+		'n': 50};
     var callback = got_results;
     if (c != 0 && cont != -2) {
 	if (cont != -1) {
