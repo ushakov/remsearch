@@ -12,18 +12,42 @@
       #res {
         background-color: #ddd;
       }
+      .button {
+        border: 1px solid grey;
+        background-color: #ccc;
+        padding: 0.2em;
+        cursor: default;
+      }
+      .button:hover {
+        background-color: #eee;
+      }
+      .list {
+        background-color: #dfd;
+        border: 1px solid black;
+        position: absolute;
+        padding: 0.5em;
+        top:0px;
+        left:0px;
+        width:500px;
+        height: 90%;
+        overflow: auto;
+        visibility: hidden;
+      }
     </style>
   </head>
   <body onload="initialize()" onunload="GUnload()" style="height:98%">
-    <div style="width:95%;height:97%;">
+    <div style="width:95%;height:95%;">
       <div id="map_canvas" style="height:100%; width:100%"></div>
     </div>
     <form action="javascript:;">
       <input type="text" id="text" size="40">
-      (<input type="checkbox" id="in-titles"> in titles)
+      (<input type="checkbox" id="in-titles"> in titles,
+      <input type="checkbox" id="in-vport" checked> in viewport)
       <input id="refresh" type="submit" value="Refresh">
       <input id="more" type="submit" value="More">
+      <span id="res">0</span> results
     </form>
-    <div id="res"></div>
+    <div id="listbutton" class="button" style="position:absolute;bottom:0px;right:0px">List</div>
+    <div id="list" class="list"></div>
   </body>
 </html>

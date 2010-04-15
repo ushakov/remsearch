@@ -19,7 +19,7 @@ function initialize() {
   map.addControl(new GSmallMapControl());
   map.addControl(new GMapTypeControl());
   map.enableScrollWheelZoom();
-  GEvent.addListener(map, "dragend", refresh);
+  GEvent.addListener(map, "dragend", map_dragged);
 }
 
 $(document).ready(function() {
@@ -30,6 +30,9 @@ $(document).ready(function() {
 	$("#more").click(more);
 	$("#refresh").click(refresh);
 	$("#in-titles").change(refresh);
+	$("#in-vport").change(refresh);
+	hide_list();
+	$("#listbutton").click(toggle_list);
     });
 
 function query_changed(oldVal) {
@@ -40,6 +43,13 @@ function query_changed(oldVal) {
     send_search(text, 0);
 }
 
+function map_dragged(ev) {
+    // Don't refresh if not viewport-dependent.
+    if ($("#in-vport").val()) {
+	refresh();
+    }
+}
+
 var placemarks = [];
 var cont = -2;
 
@@ -47,14 +57,10 @@ function send_search(q, c) {
     if (!q) {
 	return;
     }
-    $("#res").html('');
+    $("#res").html('...');
     var b = map.getBounds();
     var data = {'output': 'json',
 		'q': q,
-		'minlat': b.getSouthWest().y,
-		'minlng': b.getSouthWest().x,
-		'maxlat': b.getNorthEast().y,
-		'maxlng': b.getNorthEast().x,
 		'n': 30};
     var callback = got_results;
     if (c != 0 && cont != -2) {
@@ -66,6 +72,12 @@ function send_search(q, c) {
 
     if ($("#in-titles").val()) {
 	data['ts'] = 1;
+    }
+    if ($("#in-vport").val()) {
+	data['minlat'] = b.getSouthWest().y;
+	data['minlng'] = b.getSouthWest().x;
+	data['maxlat'] = b.getNorthEast().y;
+	data['maxlng'] = b.getNorthEast().x;
     }
     $.getJSON("/search", data, callback);
 }
@@ -80,11 +92,10 @@ function got_results(json) {
 }
 
 function got_more_results(json) {
-    //    $("#res").append("<div>" + json['q'] + "</div>");
     for (var i = 0; i < json['data'].length; ++i) {
 	var t = json['data'][i];
-	//$("#res").append("<div>lat=" + t['lat'] + "; lng=" + t['lng'] + " " + t['title'] + "</div>");
 	var marker = makeMarker(t['lat'], t['lng'], t['title'], t['id']);
+	marker.data = t;
 	placemarks[placemarks.length] = marker; 
 	map.addOverlay(marker);
     }
@@ -94,7 +105,10 @@ function got_more_results(json) {
     } else {
 	$("#more").show();
     }
-    $("#res").html("<div>" + placemarks.length + "</div>");
+    $("#res").html(placemarks.length);
+    if (list_shown) {
+	show_list();
+    }
 }
 
 function refresh() {
@@ -116,6 +130,12 @@ function showDescription(marker, id) {
     marker.openInfoWindowHtml(response);
 }
 
+function show(n) {
+    var marker = placemarks[n];
+    var id = placemarks[n].data['id'];
+    showDescription(marker, id);
+}
+
 function makeMarker(lat, lng, title, id) {
   var myicon = new GIcon();
   myicon.image = "/search?name=icon.png";
@@ -129,4 +149,35 @@ function makeMarker(lat, lng, title, id) {
           showDescription(marker, id);
       });
   return marker;
+}
+var list_shown;
+function show_list() {
+    var list = $("#list");
+    list.css("visibility", "visible");
+    list.html('<ul>');
+    for(var i = 0; i < placemarks.length; i++) {
+	var t = placemarks[i].data['title'];
+	var html = "<li>" +
+	    "<a href=\"javascript:show(" + i + ")\">" + t + "</a>";
+	list.append(html);
+    }
+    if (!list_shown) {
+	list.fadeIn("slow");
+    }
+    list_shown = 1;
+}
+
+function hide_list() {
+    if (list_shown) {
+	$("#list").fadeOut("slow");
+    }
+    list_shown = 0;
+}
+
+function toggle_list() {
+    if (list_shown) {
+	hide_list();
+    } else {
+	show_list();
+    }
 }
