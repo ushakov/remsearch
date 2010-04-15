@@ -31,7 +31,12 @@ $(document).ready(function() {
 	$("#refresh").click(refresh);
 	$("#in-titles").change(refresh);
 	$("#in-vport").change(refresh);
-	hide_list();
+
+	$("#in-titles-label").click(function() {$("#in-titles").click();});
+	$("#in-vport-label").click(function() {$("#in-vport").click();});
+
+	$("#list").hide();
+	list_shown = 0;
 	$("#listbutton").click(toggle_list);
     });
 

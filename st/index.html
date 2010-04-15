@@ -36,13 +36,13 @@
     </style>
   </head>
   <body onload="initialize()" onunload="GUnload()" style="height:98%">
-    <div style="width:95%;height:95%;">
+    <div style="width:100%;height:95%">
       <div id="map_canvas" style="height:100%; width:100%"></div>
     </div>
     <form action="javascript:;">
       <input type="text" id="text" size="40">
-      (<input type="checkbox" id="in-titles"> in titles,
-      <input type="checkbox" id="in-vport" checked> in viewport)
+      (<input type="checkbox" id="in-titles"><span id="in-titles-label"> in titles</span>,
+      <input type="checkbox" id="in-vport" checked name="b"><span id="in-vport-label"> in viewport</span>)
       <input id="refresh" type="submit" value="Refresh">
       <input id="more" type="submit" value="More">
       <span id="res">0</span> results
