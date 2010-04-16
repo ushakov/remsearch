@@ -31,9 +31,11 @@ $(document).ready(function() {
 	$("#refresh").click(refresh);
 	$("#in-titles").change(refresh);
 	$("#in-vport").change(refresh);
+	$("#icons").change(refresh);
 
 	$("#in-titles-label").click(function() {$("#in-titles").click(); refresh();});
 	$("#in-vport-label").click(function() {$("#in-vport").click(); refresh();});
+	$("#icons-label").click(function() {$("#icons").click(); refresh();});
 
 	$("#list").hide();
 	list_shown = 0;
@@ -131,7 +133,7 @@ function showDescription(marker, id) {
         id_str = "0" + id_str;
     }
     var descr_url = cache_server_base + 'wmdescr_ru_' + id_str + '.html';
-    response = '<div style="overflow:auto;height:95%"><iframe frameborder=0 width=650 height=400 src="' + descr_url + '"></div>';
+    response = '<div style="overflow:auto;height:95%"><iframe frameborder=0 width=650 height=350 src="' + descr_url + '"></div>';
     marker.openInfoWindowHtml(response);
 }
 
@@ -143,11 +145,23 @@ function show(n) {
 
 function makeMarker(lat, lng, title, id) {
   var myicon = new GIcon();
-  myicon.image = "/search?name=icon.png";
-  myicon.shadow = null;
-  myicon.iconSize = new GSize(32, 32);
-  myicon.iconAnchor = new GPoint(16, 32);
-  myicon.infoWindowAnchor = new GPoint(16, 32);
+  if ($("#icons").val()) {
+      var id_str = "" + id;
+      while (id_str.length < 8) {
+	  id_str = "0" + id_str;
+      }
+      myicon.image = cache_server_base + 'wmdescr_ru_' + id_str + '.icon';
+      myicon.shadow = null;
+      myicon.iconSize = new GSize(96, 96);
+      myicon.iconAnchor = new GPoint(48, 96);
+      myicon.infoWindowAnchor = new GPoint(48, 96);
+  } else {
+      myicon.image = "/search?name=icon.png";
+      myicon.shadow = null;
+      myicon.iconSize = new GSize(32,32);
+      myicon.iconAnchor = new GPoint(16, 32);
+      myicon.infoWindowAnchor = new GPoint(16, 32);
+  }
   var point = new GLatLng(lat,lng);
   var marker = new GMarker(point, {"icon": myicon, "title": title});
   GEvent.addListener(marker, "click", function() {

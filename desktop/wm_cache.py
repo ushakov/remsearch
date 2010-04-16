@@ -35,6 +35,10 @@ _IMAGE_TAG=('<img onclick="javascript:onImageClick(this)" '
 class WMCacheHandler(object):
   def __init__(self, storage,):
     self.storage = storage
+    f = open("icon.jpg")
+    r = f.read()
+    f.close()
+    self.icon = r
 
   def Register(self, server):
     server.RegisterHandler('/wmcache', self._HandleGetCached)
@@ -50,6 +54,10 @@ class WMCacheHandler(object):
     local_url = args['path']
     if re.match('[^0-9a-z._]', local_url):
       raise Exception('Bad file requested')
+    if local_url.endswith('.icon'):
+      local_url = local_url[:-5] + '.html'
+      content = self.storage.Read(local_url)
+      return self._GetIcon(content), 'image/jpeg'
     if not self.storage.Exists(local_url):
       raise Exception('Doesn\'t exist in cache: %s' % local_url)
     if local_url.endswith('.jpg'):
@@ -70,4 +78,10 @@ class WMCacheHandler(object):
     html = html.replace('<html>', '')
     html = html.replace('</html>', '')
     return html
+
+  def _GetIcon(self, html):
+    images = re.findall('<img src="(wmimage[^"]*)"/>', html)
+    if not images:
+      return self.icon
+    return self.storage.Read(images[0])
 
